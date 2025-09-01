@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Photoshop 计算器插件</title>
+    <!-- 引入 CEP 必备库 -->
+    <script src="js/CSInterface.js"></script>
+    <script src="js/Vulcan.js"></script>
+    <script>
+        // 初始化 CEP 接口
+        const csInterface = new CSInterface();
+        
+        // 加载 JSX 脚本
+        function initHostScript() {
+            const extensionRoot = csInterface.getSystemPath("extension");
+            csInterface.evalScript('$.evalFile("' + extensionRoot + '/jsx/host.jsx")', function() {
+                console.log("JSX host script loaded");
+            });
+        }
+        
+        // 文档加载完成后初始化
+        document.addEventListener("DOMContentLoaded", function() {
+            initHostScript();
+            
+            // 设置主题以匹配 Photoshop
+            const themeInfo = csInterface.hostEnvironment.appSkinInfo;
+            applyTheme(themeInfo);
+            
+            // 监听主题变化
+            csInterface.addEventListener(CSInterface.THEME_COLOR_CHANGED_EVENT, applyTheme);
+        });
+        
+        // 应用 Photoshop 主题颜色
+        function applyTheme(themeInfo) {
+            const darkBgColor = "#2D2D2D";
+            const darkTextColor = "#F0F0F0";
+            
+            document.body.style.backgroundColor = darkBgColor;
+            document.body.style.color = darkTextColor;
+            
+            // 可以根据 themeInfo 更精细地调整颜色
+            // 例如 panelBackgroundColor, systemHighlightColor 等
+        }
+    </script>
+    <style>
+        :root {
+            --bg-color: #2d2d2d;
+            --panel-bg: #3a3a3a;
+            --text-color: #e0e0e0;
+            --highlight-color: #4a4a4a;
+            --operator-color: #ff9500;
+            --clear-color: #ff3b30;
+            --equals-color: #4cd964;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            width: 300px;
+            height: 400px;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        .container {
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        
+        h1 {
+            font-size: 18px;
+            text-align: center;
+            margin: 0 0 20px 0;
+            padding: 0;
+            color: var(--text-color);
+        }
+        
+        .display {
+            background-color: var(--panel-bg);
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: right;
+            font-size: 24px;
+            height: 40px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 8px;
+        }
+        
+        button {
+            background-color: var(--highlight-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 4px;
+            padding: 12px 0;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            outline: none;
+        }
+        
+        button:hover {
+            filter: brightness(1.2);
+        }
+        
+        button:active {
+            filter: brightness(0.9);
+        }
+        
+        .operator {
+            background-color: var(--operator-color);
+        }
+        
+        .clear {
+            background-color: var(--clear-color);
+        }
+        
+        .equals {
+            background-color: var(--equals-color);
+        }
+        
+        /* 响应 Photoshop 主题变化的类 */
+        .theme-bg {
+            background-color: var(--bg-color);
+        }
+        
+        .theme-text {
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container theme-bg">
+        <h1 class="theme-text">Photoshop 计算器</h1>
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button onclick="appendToDisplay('(')">(</button>
+            <button onclick="appendToDisplay(')')">)</button>
+            <button class="operator" onclick="appendToDisplay('/')">/</button>
+            
+            <button onclick="appendToDisplay('7')">7</button>
+            <button onclick="appendToDisplay('8')">8</button>
+            <button onclick="appendToDisplay('9')">9</button>
+            <button class="operator" onclick="appendToDisplay('*')">×</button>
+            
+            <button onclick="appendToDisplay('4')">4</button>
+            <button onclick="appendToDisplay('5')">5</button>
+            <button onclick="appendToDisplay('6')">6</button>
+            <button class="operator" onclick="appendToDisplay('-')">-</button>
+            
+            <button onclick="appendToDisplay('1')">1</button>
+            <button onclick="appendToDisplay('2')">2</button>
+            <button onclick="appendToDisplay('3')">3</button>
+            <button class="operator" onclick="appendToDisplay('+')">+</button>
+            
+            <button onclick="appendToDisplay('0')">0</button>
+            <button onclick="appendToDisplay('.')">.</button>
+            <button onclick="backspace()">⌫</button>
+            <button class="equals" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        // 计算器逻辑
+        let currentDisplay = '0';
+        const display = document.getElementById('display');
+        
+        function updateDisplay() {
+            display.textContent = currentDisplay;
+        }
+        
+        function appendToDisplay(value) {
+            if (currentDisplay === '0' && value !== '.') {
+                currentDisplay = value;
+            } else {
+                currentDisplay += value;
+            }
+            updateDisplay();
+        }
+        
+        function clearDisplay() {
+            currentDisplay = '0';
+            updateDisplay();
+        }
+        
+        function backspace() {
+            if (currentDisplay.length === 1) {
+                currentDisplay = '0';
+            } else {
+                currentDisplay = currentDisplay.slice(0, -1);
+            }
+            updateDisplay();
+        }
+        
+        function calculate() {
+            try {
+                // 记录计算历史到 Photoshop
+                logCalculation(currentDisplay);
+                
+                currentDisplay = eval(currentDisplay).toString();
+                updateDisplay();
+            } catch (error) {
+                currentDisplay = 'Error';
+                updateDisplay();
+                setTimeout(clearDisplay, 1000);
+            }
+        }
+        
+        // 记录计算历史到 Photoshop 扩展控制台
+        function logCalculation(expression) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] Calculation: ${expression} = ${eval(expression)}`;
+            
+            csInterface.evalScript(`logCalculation("${logMessage}")`, function(result) {
+                console.log("Calculation logged to Photoshop:", result);
+            });
+        }
+        
+        // 添加键盘支持
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            
+            if (/[0-9()+\-*/.=]/.test(key)) {
+                if (key === '=' || key === 'Enter') {
+                    calculate();
+                } else {
+                    appendToDisplay(key);
+                }
+            } else if (key === 'Backspace') {
+                backspace();
+            } else if (key === 'Escape') {
+                clearDisplay();
+            }
+        });
+        
+        // 与 Photoshop 通信的示例函数
+        function sendToPhotoshop(command) {
+            csInterface.evalScript(command, function(result) {
+                console.log("Photoshop response:", result);
+            });
+        }
+    </script>
+</body>
+</html>
